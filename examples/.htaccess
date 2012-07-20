@@ -1,0 +1,4 @@
+#Options +FollowSymLinks -Indexes
+Options FollowSymLinks
+RewriteEngine on
+RewriteRule ^(([^\.]+)?[A-Za-z0-9\s\/_-]*)(\.(s)?htm(l)?|\/)?$ index.php?$1
