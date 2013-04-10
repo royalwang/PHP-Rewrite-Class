@@ -1,17 +1,15 @@
 <?php
 /**
-*	cURL
 *
-*	rewrite CLASS
+*	Rewrite Class
 *
 *	@author		Olaf Erlandsen C. [Olaf Erlandsen]
-*	@author		http://www.arcanussystems.com
+*	@author		olaftriskel@gmail.com
 *
-*	@package	cURL
-*	@copyright	Copyright 2012, Olaf Erlandsen
+*	@package	Rewrite
+*	@copyright	Copyright 2013, Olaf Erlandsen
 *	@copyright	Dual licensed under the MIT or GPL Version 2 licenses.
-*	@copyright	http://www.arcanussystems.com/license
-*	@version	0.1
+*	@version	0.7
 *
 */
 class rewrite
@@ -33,15 +31,6 @@ class rewrite
 		$this->_get();
 	}
 	/**
-	*	Return "GET" array
-	*
-	*	@method	array	get( )
-	*/
-	public function get()
-	{
-		return $this->get;
-	}
-	/**
 	*	Return "REWRITE" array
 	*
 	*	@method	array	rewrite( )
@@ -53,112 +42,92 @@ class rewrite
 	/**
 	*	Parse URL and extract "REWRITE"
 	*
-	*	@method	array	_rewrite( [ string SERVER_REQUEST_URI = null ] )
-	*	@param	string	$SERVER_REQUEST_URI
+	*	@method	array	_rewrite( [ string $segments = null ] )
+	*	@param	string	$segments
 	*/
-	private function _rewrite( $SERVER_REQUEST_URI = null )
+	public function rewrite( $segments = null )
 	{
-		if( empty( $SERVER_REQUEST_URI ) )
+		$segmentsToArray = array();
+		if( !empty( $segments ) )
 		{
-			$SERVER_REQUEST_URI = $_SERVER['REQUEST_URI'];
+			$segments = iconv( "UTF-8",'ISO-8859-1//TRANSLIT',urldecode($segments));
+		}else{
+			$segments = iconv( "UTF-8",'ISO-8859-1//TRANSLIT',urldecode($_SERVER['REQUEST_URI']));
 		}
-		$__path__ = parse_url($this->root,PHP_URL_PATH);
-		if( strlen( $__path__ ) > 0)
-		{
-			$__path__ = preg_quote($__path__);
-			$__path__ = preg_replace('/^(\/)/i', '(/)?', $__path__);
-			$__path__ = preg_replace('/(\/)/i','\\/', $__path__);
-			$_REQUEST_URI = preg_replace( "/^(".$__path__.")/i" , '' , $SERVER_REQUEST_URI );
-		}
-		else
-		{
-			$_REQUEST_URI = $SERVER_REQUEST_URI;
-		}
-		$uri = preg_replace( '/(\.(s)?htm(l)?)?(\?)+(.*?)$/i' , '' ,$_REQUEST_URI);
-		$segments = explode('/',$uri);
+		$segments = preg_replace( '/(\.(s)?htm(l)?)?(\?)+(.*?)$/i' , '' ,$segments);
+		$segments = explode( '/' , $segments );
 		if( count( $segments ) > 0 )
 		{
-			foreach( explode('/',$uri) as $rewrite )
+			foreach( $segments AS $segment )
 			{
-				$rewrite = preg_replace('/(\.(s)?htm(l)?|\.php)$/','',$rewrite);
-				if( !is_null($rewrite) AND is_string($rewrite) )
+				$segment = preg_replace('/(\.(s)?htm(l)?|\.php)$/','',$segment);
+				if( !empty( $segment ) )
 				{
-					if( strlen(trim($rewrite)) > 0 )
+					if( strlen(trim($segment)) > 0 )
 					{
-						$this->rewrite[] = urldecode($rewrite);
+						$segmentsToArray[] = urldecode($segment);
 					}
 				}
-			}
-		}
+			};
+		};
+		return $segmentsToArray;
 	}
 	/**
 	*	Parse URL and extract "$_GET"
 	*
 	*	@method	array	_get()
 	*/
-	public function _get()
+	public function get()
 	{
-		$uri = $_SERVER['REQUEST_URI'];
+		$stringQueryToArray = array();
 		$match = array();
-		preg_match( '/(\.html)?\?([\w\d\D\W]*)/i' , $uri,$match );
-		if( array_key_exists(2,$match) )
+		preg_match( '/\?([\w\d\D\W]*)/i' ,$_SERVER['REQUEST_URI'],$match);
+		if( array_key_exists(1,$match) )
 		{
-			foreach( explode( '&' , $match[2] ) as $get )
-			{
-				if( !is_null($get) AND strlen($get) > 0 )
-				{
-					if( strpos( $get , '=') != false )
-					{
-						$position	= strpos( $get , '=');
-						$key 		= urldecode(substr( $get, 0 , $position ));
-						$value 		= urldecode(substr( $get, $position+1 ));
-					}
-					else
-					{
-						$key 		= urldecode(substr( $get, 0 ));
-						$value 		= null;
-					}
-					if( preg_match( '/([a-z0-9-_\.]\[(.*?)\])/i' , $key ) )
-					{
-						$array = str_replace(array('[',']'),'',substr($key,strpos($key,'[')));
-						$key = preg_replace('/\[(.*?)\]/i','',$key);
-						if( array_key_exists( $key , $this->get ) )
-						{
-							if( !is_array( $this->get[$key] ) )
-							{
-								$this->get[$key] = array();
-							}
-						}
-						else
-						{
-							$this->get[$key] = array();
-						}
-						if( strlen( $array ) == 0 )
-						{
-							$this->get[$key][] = $value;
-						}
-						else
-						{
-							$this->get[$key][$array] = $value;
-						}
-					}
-					else
-					{
-						if( is_array( $this->get ) AND array_key_exists( $key , $this->get ) )
-						{
-							if( !is_array( $this->get[$key] ) )
-							{
-								$this->get[$key] = $value;
-							}
-						}
-						else
-						{
-							$this->get[$key] = $value;
-						}
-					}
-				}
-			}
+			parse_str( $match[1] , $stringQueryToArray);
 		}
+		return $stringQueryToArray;
+	}
+	/**
+	*	Return "$_REQUEST"
+	*
+	*	@method	array	requestVarSimulator()
+	*/
+	public function requestVarSimulator( $requestOrder = null , $defaul = null )
+	{
+		$requests = array();
+		if( empty($requestOrder) )
+		{
+			$getRequestOrder = str_split(ini_get ('request_order'));
+		}else{
+			$getRequestOrder = str_split($requestOrder);
+		}
+		krsort( $getRequestOrder );
+		foreach ( $getRequestOrder AS $request )
+		{
+			 $request = trim( strtolower( $request ) );
+			 if( $request== 'p' )
+			 {
+			 	$requests = array_merge( $_POST , $requests );
+			 }
+			 else if( $request == 'g' )
+			 {
+			 	$requests = array_merge( $this->getMethod() , $requests );
+			 }
+			 else if( $request== 'c' )
+			 {
+			 	$requests = array_merge( $_COOKIE , $requests );
+			 }
+			 else if( $request== 's' )
+			 {
+			 	$requests = array_merge( $_SERVER ,$requests );
+			 }
+			 else if($request=='e')
+			 {
+			 	$requests = array_merge( $_ENV, $requests );
+			 }
+		};
+		return $requests;
 	}
 }
 ?>

@@ -1,4 +1,4 @@
-Rewrite Class
+Rewrite Class 0.7
 ------------
 
 
