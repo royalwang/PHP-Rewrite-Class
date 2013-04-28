@@ -31,18 +31,9 @@ class rewrite
 		$this->_get();
 	}
 	/**
-	*	Return "REWRITE" array
-	*
-	*	@method	array	rewrite( )
-	*/
-	public function rewrite()
-	{
-		return $this->rewrite;
-	}
-	/**
 	*	Parse URL and extract "REWRITE"
 	*
-	*	@method	array	_rewrite( [ string $segments = null ] )
+	*	@method	array	rewrite( [ string $segments = null ] )
 	*	@param	string	$segments
 	*/
 	public function rewrite( $segments = null )
