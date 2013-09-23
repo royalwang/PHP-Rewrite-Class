@@ -9,34 +9,97 @@
 *	@package	Rewrite
 *	@copyright	Copyright 2013, Olaf Erlandsen
 *	@copyright	Dual licensed under the MIT or GPL Version 2 licenses.
-*	@version	0.7
+*	@version	1.0
 *
 */
-class rewrite
+class Rewrite
 {
-	private $get = array();
-	private $rewrite = array();
-	private $root = null;
-	
-	public function __construct( $root = null )
+	/**
+	*	Emulate SERVER variable
+	*
+	*	@param	string	$requestOrder
+	*	@param	string	$defaul
+	*/
+	static public function requestVarSimulator( $requestOrder = null , $defaul = null )
 	{
-		if( !empty($root) )
+		$isStatic = !(isset($this) && get_class($this) == __CLASS__);
+		$requests = array();
+		if( empty($requestOrder) )
 		{
-			$this->root = $root;
+			$getRequestOrder = str_split(ini_get ('request_order'));
 		}else{
-			$this->root = null;
+			$getRequestOrder = str_split($requestOrder);
 		}
-		
-		$this->_rewrite();
-		$this->_get();
+		krsort( $getRequestOrder );
+		foreach ( $getRequestOrder AS $request )
+		{
+			$request = trim( strtolower( $request ) );
+			switch ( $request )
+			{
+				case 'p':
+					$requests = array_merge( $_POST , $requests );
+				break;
+				
+				case 'g':
+					if( $isStatic === true )
+				 	{
+				 		$requests = array_merge( self::getMethod() , $requests );
+					}else{
+						$requests = array_merge( $this->getMethod() , $requests );
+					}
+				break;
+				
+				case 'c':
+					$requests = array_merge( $_COOKIE , $requests );
+				break;
+				
+				case 's':
+					$requests = array_merge( $_SERVER ,$requests );
+				break;
+				
+				case 'e':
+					$requests = array_merge( $_ENV, $requests );
+				break;
+			}
+		};
+		return $requests;
 	}
 	/**
-	*	Parse URL and extract "REWRITE"
+	*	Parse url and extract GET vars
 	*
-	*	@method	array	rewrite( [ string $segments = null ] )
+	*/
+	static public function getMethod( )
+	{
+		$stringQueryToArray = array();
+		$match = array();
+		preg_match( '/\?([\w\d\D\W]*)/i' ,$_SERVER['REQUEST_URI'],$match);
+		if( array_key_exists(1,$match) )
+		{
+			parse_str( $match[1] , $stringQueryToArray);
+		}
+		return $stringQueryToArray;
+	}
+	/**
+	*	Get var by key
+	*
+	*	@param	string	$key
+	*	@param	mixed	$default
+	*/
+	public static function get( $key , $default = null )
+	{
+		$get = self::getMethod();
+		if( array_key_exists( $key , $get ) )
+		{
+			return $get[ $key ];
+		}
+		return $default;
+	}
+	/**
+	*	Parse url segments
+	*
 	*	@param	string	$segments
 	*/
-	public function rewrite( $segments = null )
+	static public function segments( $segments = null )
 	{
 		$segmentsToArray = array();
 		if( !empty( $segments ) )
@@ -64,61 +127,25 @@ class rewrite
 		return $segmentsToArray;
 	}
 	/**
-	*	Parse URL and extract "$_GET"
+	*	Create URL from segments string
 	*
-	*	@method	array	_get()
+	*	@param	string	$segments
 	*/
-	public function get()
+	public static function createUrl( $segments )
 	{
-		$stringQueryToArray = array();
-		$match = array();
-		preg_match( '/\?([\w\d\D\W]*)/i' ,$_SERVER['REQUEST_URI'],$match);
-		if( array_key_exists(1,$match) )
+		$uri = 'http';
+		if ( array_key_exists('HTTPS' , $_SERVER ) AND $_SERVER["HTTPS"] == "on")
 		{
-			parse_str( $match[1] , $stringQueryToArray);
+			$uri .= "s";
 		}
-		return $stringQueryToArray;
-	}
-	/**
-	*	Return "$_REQUEST"
-	*
-	*	@method	array	requestVarSimulator()
-	*/
-	public function requestVarSimulator( $requestOrder = null , $defaul = null )
-	{
-		$requests = array();
-		if( empty($requestOrder) )
-		{
-			$getRequestOrder = str_split(ini_get ('request_order'));
-		}else{
-			$getRequestOrder = str_split($requestOrder);
+		$uri .= "://";
+		if ($_SERVER["SERVER_PORT"] != "80") {
+			$uri .= $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"];
+		} else {
+			$uri .= $_SERVER["SERVER_NAME"];
 		}
-		krsort( $getRequestOrder );
-		foreach ( $getRequestOrder AS $request )
-		{
-			 $request = trim( strtolower( $request ) );
-			 if( $request== 'p' )
-			 {
-			 	$requests = array_merge( $_POST , $requests );
-			 }
-			 else if( $request == 'g' )
-			 {
-			 	$requests = array_merge( $this->getMethod() , $requests );
-			 }
-			 else if( $request== 'c' )
-			 {
-			 	$requests = array_merge( $_COOKIE , $requests );
-			 }
-			 else if( $request== 's' )
-			 {
-			 	$requests = array_merge( $_SERVER ,$requests );
-			 }
-			 else if($request=='e')
-			 {
-			 	$requests = array_merge( $_ENV, $requests );
-			 }
-		};
-		return $requests;
+		$uri .=  '/' . $segments ;
+		echo $uri;
+		return preg_replace( '/(\/+)/' , '/' , $uri );
 	}
 }
-?>
