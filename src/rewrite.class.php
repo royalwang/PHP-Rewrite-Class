@@ -145,7 +145,6 @@ class Rewrite
 			$uri .= $_SERVER["SERVER_NAME"];
 		}
 		$uri .=  '/' . $segments ;
-		echo $uri;
 		return preg_replace( '/(\/+)/' , '/' , $uri );
 	}
 }
