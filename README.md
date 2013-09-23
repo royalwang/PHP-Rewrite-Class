@@ -1,5 +1,7 @@
-Rewrite Class 1.0!
+Rewrite class for friendly urls v1.0!
 ------------
+Small, powerful and agile tool for friendly urls using PHP5.
+An excellent aid to create your own framework.
 
 
 Example #1: Basic
